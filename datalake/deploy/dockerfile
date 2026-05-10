@@ -2,10 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY deploy/pyproject.toml .
+COPY datalake/deploy/pyproject.toml .
 RUN pip install -e .
 
-COPY mini_data_proc/datalake/ .
+COPY datalake/assets/ ./assets/
+COPY datalake/connectors/ ./connectors/
+COPY datalake/definitions.py .
 
 EXPOSE 3000
 

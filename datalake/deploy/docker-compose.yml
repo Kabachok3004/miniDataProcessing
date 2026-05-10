@@ -1,13 +1,13 @@
 services:
   dagster:
     build:
-      context: ..          # корень репо
-      dockerfile: deploy/Dockerfile
+      context: ../..        # корень репо — отсюда виден datalake/
+      dockerfile: datalake/deploy/Dockerfile
     restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
-      - ../.env
+      - ../../.env
     volumes:
       - dagster_storage:/app/.dagster_home
 

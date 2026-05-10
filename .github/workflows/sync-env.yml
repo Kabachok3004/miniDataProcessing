@@ -16,7 +16,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cat > /opt/mini_data_proc/datalake/.env << 'EOF'
+            cat > /opt/mini_data_proc/.env << 'EOF'
             datalake_address=${{ secrets.DATA_LAKE_ADDRESS }}
             datalake_access_key=${{ secrets.DATA_LAKE_ACCESS_KEY }}
             datalake_secret_key=${{ secrets.DATA_LAKE_SECRET_KEY }}
