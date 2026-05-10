@@ -1,0 +1,24 @@
+# .github/workflows/sync-env.yml
+name: Sync .env to VPS
+
+on:
+  workflow_dispatch:      # только руками — не автоматически при пуше
+
+jobs:
+  sync-env:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Write .env to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cat > /opt/datalake/.env << 'EOF'
+            datalake_address=${{ secrets.DATA_LAKE_ADDRESS }}
+            datalake_access_key=${{ secrets.DATA_LAKE_ACCESS_KEY }}
+            datalake_secret_key=${{ secrets.DATA_LAKE_SECRET_KEY }}
+            EOF
+            echo ".env обновлён"
