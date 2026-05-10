@@ -5,7 +5,7 @@ WORKDIR /app
 COPY deploy/pyproject.toml .
 RUN pip install -e .
 
-COPY datalake/ .
+COPY ../datalake/ .
 
 EXPOSE 3000
 
