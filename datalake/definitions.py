@@ -1,5 +1,5 @@
 from dagster import Definitions, define_asset_job, ScheduleDefinition
-from assets.cbr import cbr_raw, cbr_clean, cbr_to_s3
+from datalake.assets.cbr import cbr_raw, cbr_clean, cbr_to_s3
 
 cbr_job = define_asset_job(
     name="cbr_job",

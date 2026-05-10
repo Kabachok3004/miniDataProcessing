@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY deploy/pyproject.toml .
+RUN pip install -e .
+
+COPY datalake/ .
+
+EXPOSE 3000
+
+CMD ["dagster", "dev", "-f", "definitions.py", "-h", "0.0.0.0", "-p", "3000"]

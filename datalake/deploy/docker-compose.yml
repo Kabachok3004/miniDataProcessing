@@ -1,0 +1,15 @@
+services:
+  dagster:
+    build:
+      context: ..          # корень репо
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../.env
+    volumes:
+      - dagster_storage:/app/.dagster_home
+
+volumes:
+  dagster_storage:
