@@ -15,7 +15,7 @@ def get_s3_client():
         region_name="ru-central1",
     )
 
-
+ 
 def upload_to_s3(
     local_path: str | Path,
     bucket: str,
