@@ -13,5 +13,5 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.backends.legacy:BuildBackend"
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
