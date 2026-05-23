@@ -1,3 +1,5 @@
+# Стек для основного VPS: Dagster + Kafka.
+# Flink уехал на второй VPS (см. docker-compose.flink.yml).
 services:
   dagster:
     build:
@@ -17,7 +19,7 @@ services:
     image: apache/kafka:3.7.1
     restart: unless-stopped
     ports:
-      - "9094:9094"           # внешний listener для доступа с локальной машины
+      - "9094:9094"           # внешний listener — Flink с VPS2 и локальные клиенты ходят сюда
     environment:
       # KRaft mode — без Zookeeper
       KAFKA_NODE_ID: "0"
@@ -37,46 +39,6 @@ services:
       CLUSTER_ID: "mini-data-cluster-0"
     volumes:
       - kafka_data:/tmp/kraft-combined-logs
-
-  flink-jobmanager:
-    build:
-      context: ../..
-      dockerfile: datalake/deploy/flink.Dockerfile
-    image: mini-flink:1.18
-    restart: unless-stopped
-    command: jobmanager
-    ports:
-      - "8081:8081"           # Web UI + REST
-    environment:
-      FLINK_PROPERTIES: |
-        jobmanager.rpc.address: flink-jobmanager
-        jobmanager.memory.process.size: 1024m
-        rest.address: 0.0.0.0
-        rest.bind-address: 0.0.0.0
-        s3.endpoint: ${datalake_address:-https://storage.yandexcloud.net}
-        s3.access.key: ${datalake_access_key}
-        s3.secret.key: ${datalake_secret_key}
-        s3.path.style.access: true
-    volumes:
-      - ../streaming/jobs:/opt/jobs:ro   # репо: datalake/streaming/jobs
-    depends_on:
-      - kafka
-
-  flink-taskmanager:
-    image: mini-flink:1.18
-    restart: unless-stopped
-    command: taskmanager
-    environment:
-      FLINK_PROPERTIES: |
-        jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 2
-        taskmanager.memory.process.size: 1536m
-        s3.endpoint: ${datalake_address:-https://storage.yandexcloud.net}
-        s3.access.key: ${datalake_access_key}
-        s3.secret.key: ${datalake_secret_key}
-        s3.path.style.access: true
-    depends_on:
-      - flink-jobmanager
 
 volumes:
   dagster_storage:

@@ -1,16 +1,17 @@
 # .github/workflows/sync-env.yml
-name: Sync .env to VPS
+name: Sync .env to VPSes
 
 on:
   workflow_dispatch:      # только руками — не автоматически при пуше
 
+# Один и тот же .env идёт на оба сервера 1:1.
+# Два job-а вместо matrix, чтобы было видно по логам, какой VPS отстаёт.
 jobs:
-  sync-env:
+  sync-primary:
+    name: Sync .env to VPS1 (Kafka + Dagster)
     runs-on: ubuntu-latest
-
     steps:
-      - name: Write .env to VPS
-        uses: appleboy/ssh-action@v1
+      - uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -23,4 +24,25 @@ jobs:
             KAFKA_EXTERNAL_HOST=${{ secrets.VPS_HOST }}
             KAFKA_BOOTSTRAP=${{ secrets.VPS_HOST }}:9094
             EOF
-            echo ".env обновлён"
+            chmod 600 /opt/mini_data_proc/.env
+            echo ".env обновлён на VPS1"
+
+  sync-flink:
+    name: Sync .env to VPS2 (Flink)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS2_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cat > /opt/mini_data_proc/.env << 'EOF'
+            datalake_address=${{ secrets.DATA_LAKE_ADDRESS }}
+            datalake_access_key=${{ secrets.DATA_LAKE_ACCESS_KEY }}
+            datalake_secret_key=${{ secrets.DATA_LAKE_SECRET_KEY }}
+            KAFKA_EXTERNAL_HOST=${{ secrets.VPS_HOST }}
+            KAFKA_BOOTSTRAP=${{ secrets.VPS_HOST }}:9094
+            EOF
+            chmod 600 /opt/mini_data_proc/.env
+            echo ".env обновлён на VPS2"

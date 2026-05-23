@@ -29,6 +29,11 @@ def main() -> None:
     t_env = TableEnvironment.create(env_settings)
     t_env.get_config().set("parallelism.default", "1")
 
+    # Без checkpoint-а filesystem sink не финализирует файлы (они застывают
+    # в .inprogress). 30 сек — баланс между задержкой и нагрузкой.
+    t_env.get_config().set("execution.checkpointing.interval", "30 s")
+    t_env.get_config().set("execution.checkpointing.mode", "EXACTLY_ONCE")
+
     t_env.execute_sql(f"""
         CREATE TABLE events_src (
             event_type STRING,

@@ -1,0 +1,44 @@
+# Стек для второго VPS: только Flink (JM + TM).
+# Kafka и Dagster живут на основном VPS (docker-compose.yml).
+# Flink ходит за Kafka по публичному адресу основного VPS — KAFKA_BOOTSTRAP из .env.
+services:
+  flink-jobmanager:
+    build:
+      context: ../..
+      dockerfile: datalake/deploy/flink.Dockerfile
+    image: mini-flink:1.18
+    restart: unless-stopped
+    command: jobmanager
+    ports:
+      - "8081:8081"           # Web UI + REST
+    environment:
+      # Для PyFlink-джоба (rolling_metrics.py читает из env)
+      KAFKA_BOOTSTRAP_INTERNAL: "${KAFKA_BOOTSTRAP:?KAFKA_BOOTSTRAP not set in .env}"
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1024m
+        rest.address: 0.0.0.0
+        rest.bind-address: 0.0.0.0
+        s3.endpoint: ${datalake_address:-https://storage.yandexcloud.net}
+        s3.access.key: ${datalake_access_key}
+        s3.secret.key: ${datalake_secret_key}
+        s3.path.style.access: true
+    volumes:
+      - ../streaming/jobs:/opt/jobs:ro   # репо: datalake/streaming/jobs
+
+  flink-taskmanager:
+    image: mini-flink:1.18
+    restart: unless-stopped
+    command: taskmanager
+    environment:
+      KAFKA_BOOTSTRAP_INTERNAL: "${KAFKA_BOOTSTRAP:?KAFKA_BOOTSTRAP not set in .env}"
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        taskmanager.memory.process.size: 1536m
+        s3.endpoint: ${datalake_address:-https://storage.yandexcloud.net}
+        s3.access.key: ${datalake_access_key}
+        s3.secret.key: ${datalake_secret_key}
+        s3.path.style.access: true
+    depends_on:
+      - flink-jobmanager

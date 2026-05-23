@@ -6,7 +6,9 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  # Основной сервер: Dagster + Kafka
+  deploy-primary:
+    name: Deploy core (Dagster + Kafka) to VPS1
     runs-on: ubuntu-latest
 
     steps:
@@ -19,6 +21,23 @@ jobs:
           script: |
             cd /opt/mini_data_proc
             git pull origin main
-            # --env-file явно, потому что compose v2 ищет .env рядом с compose-файлом,
+            # --env-file явно: compose v2 ищет .env рядом с compose-файлом,
             # а не в CWD. Без этого ${KAFKA_EXTERNAL_HOST} и s3.* не подставятся.
             docker compose -f datalake/deploy/docker-compose.yml --env-file .env up -d --build
+
+  # Второй сервер: только Flink
+  deploy-flink:
+    name: Deploy Flink to VPS2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS2_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/mini_data_proc
+            git pull origin main
+            docker compose -f datalake/deploy/docker-compose.flink.yml --env-file .env up -d --build
