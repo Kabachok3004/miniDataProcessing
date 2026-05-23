@@ -19,4 +19,6 @@ jobs:
           script: |
             cd /opt/mini_data_proc
             git pull origin main
-            docker compose -f datalake/deploy/docker-compose.yml up -d --build
+            # --env-file явно, потому что compose v2 ищет .env рядом с compose-файлом,
+            # а не в CWD. Без этого ${KAFKA_EXTERNAL_HOST} и s3.* не подставятся.
+            docker compose -f datalake/deploy/docker-compose.yml --env-file .env up -d --build

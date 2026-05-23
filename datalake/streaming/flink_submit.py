@@ -36,9 +36,10 @@ def _ssh_target() -> str:
 
 
 def _remote(compose_subcmd: str) -> int:
+    # --env-file явно: compose v2 ищет .env рядом с compose-файлом, а не в CWD.
     full = (
         f"cd {PROJECT_DIR} && "
-        f"docker compose -f {COMPOSE_FILE} {compose_subcmd}"
+        f"docker compose -f {COMPOSE_FILE} --env-file .env {compose_subcmd}"
     )
     print(f"[ssh {_ssh_target()}] {full}", flush=True)
     return subprocess.call(["ssh", _ssh_target(), full])
