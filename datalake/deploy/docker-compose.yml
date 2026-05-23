@@ -10,6 +10,74 @@ services:
       - ../../.env
     volumes:
       - dagster_storage:/app/.dagster_home
+    depends_on:
+      - kafka
+
+  kafka:
+    image: apache/kafka:3.7.1
+    restart: unless-stopped
+    ports:
+      - "9094:9094"           # внешний listener для доступа с локальной машины
+    environment:
+      # KRaft mode — без Zookeeper
+      KAFKA_NODE_ID: "0"
+      KAFKA_PROCESS_ROLES: "controller,broker"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      # advertised: внутри docker-сети как kafka:9092, снаружи — по публичному адресу VPS
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://${KAFKA_EXTERNAL_HOST:-localhost}:9094"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+      CLUSTER_ID: "mini-data-cluster-0"
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+
+  flink-jobmanager:
+    build:
+      context: ../..
+      dockerfile: datalake/deploy/flink.Dockerfile
+    image: mini-flink:1.18
+    restart: unless-stopped
+    command: jobmanager
+    ports:
+      - "8081:8081"           # Web UI + REST
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1024m
+        rest.address: 0.0.0.0
+        rest.bind-address: 0.0.0.0
+        s3.endpoint: ${datalake_address:-https://storage.yandexcloud.net}
+        s3.access.key: ${datalake_access_key}
+        s3.secret.key: ${datalake_secret_key}
+        s3.path.style.access: true
+    volumes:
+      - ../streaming/jobs:/opt/jobs:ro   # репо: datalake/streaming/jobs
+    depends_on:
+      - kafka
+
+  flink-taskmanager:
+    image: mini-flink:1.18
+    restart: unless-stopped
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        taskmanager.memory.process.size: 1536m
+        s3.endpoint: ${datalake_address:-https://storage.yandexcloud.net}
+        s3.access.key: ${datalake_access_key}
+        s3.secret.key: ${datalake_secret_key}
+        s3.path.style.access: true
+    depends_on:
+      - flink-jobmanager
 
 volumes:
   dagster_storage:
+  kafka_data:
