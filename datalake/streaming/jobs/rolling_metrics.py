@@ -1,9 +1,11 @@
 """
 PyFlink job: скользящие метрики из Kafka в S3.
 
-Читает JSON из топика `events` (формат: {event_type, user_id, value, ts_ms}),
+Читает JSON из топика `events` (формат: {event_type, user_id, amount, ts_ms}),
 строит sliding window 1 минута со сдвигом 10 секунд по event_type,
-считает count + sum(value) + avg(value), пишет JSON в S3.
+считает count + sum(amount) + avg(amount), пишет JSON в S3.
+
+Колонка называется `amount`, а не `value` — VALUE зарезервированное слово в Flink SQL.
 
 Запуск внутри Flink JM-контейнера (см. flink_submit.py):
     flink run -py /opt/jobs/rolling_metrics.py
@@ -31,7 +33,7 @@ def main() -> None:
         CREATE TABLE events_src (
             event_type STRING,
             user_id    BIGINT,
-            value      DOUBLE,
+            amount     DOUBLE,
             ts_ms      BIGINT,
             event_ts   AS TO_TIMESTAMP_LTZ(ts_ms, 3),
             WATERMARK FOR event_ts AS event_ts - INTERVAL '5' SECOND
@@ -70,8 +72,8 @@ def main() -> None:
             window_end,
             event_type,
             COUNT(*)    AS cnt,
-            SUM(value)  AS total,
-            AVG(value)  AS avg_value
+            SUM(amount) AS total,
+            AVG(amount) AS avg_value
         FROM TABLE(
             HOP(TABLE events_src, DESCRIPTOR(event_ts), INTERVAL '10' SECOND, INTERVAL '1' MINUTE)
         )

@@ -6,7 +6,7 @@
     python -m datalake.streaming.examples.produce_test_events --rate 10 --duration 60
 
 Формат записей совпадает с тем, что ожидает rolling_metrics.py:
-    {event_type, user_id, value, ts_ms}
+    {event_type, user_id, amount, ts_ms}
 """
 import argparse
 import random
@@ -36,7 +36,7 @@ def main() -> None:
             record = {
                 "event_type": random.choice(EVENT_TYPES),
                 "user_id": random.randint(1, 1000),
-                "value": round(random.uniform(0.5, 100.0), 2),
+                "amount": round(random.uniform(0.5, 100.0), 2),
                 "ts_ms": int(time.time() * 1000),
             }
             producer.send(args.topic, value=record)

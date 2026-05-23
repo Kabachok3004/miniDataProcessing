@@ -21,7 +21,10 @@ import subprocess
 import sys
 
 
-COMPOSE_DIR = "/opt/mini_data_proc/datalake/deploy"
+# Запускаемся из корня проекта (где лежит .env), чтобы docker compose
+# нормально его находил для подстановки переменных — как в deploy.yml.
+PROJECT_DIR = "/opt/mini_data_proc"
+COMPOSE_FILE = "datalake/deploy/docker-compose.yml"
 JOBS_DIR_IN_CONTAINER = "/opt/jobs"
 
 
@@ -32,29 +35,30 @@ def _ssh_target() -> str:
     return target
 
 
-def _remote(cmd: str) -> int:
-    full = f"cd {COMPOSE_DIR} && {cmd}"
+def _remote(compose_subcmd: str) -> int:
+    full = (
+        f"cd {PROJECT_DIR} && "
+        f"docker compose -f {COMPOSE_FILE} {compose_subcmd}"
+    )
     print(f"[ssh {_ssh_target()}] {full}", flush=True)
     return subprocess.call(["ssh", _ssh_target(), full])
 
 
 def submit(job_filename: str, detach: bool) -> int:
-    detach_flag = "-d" if detach else ""
+    detach_flag = "-d " if detach else ""
     job_path = f"{JOBS_DIR_IN_CONTAINER}/{job_filename}"
-    cmd = (
-        "docker compose exec -T flink-jobmanager "
-        f"flink run {detach_flag} -py {shlex.quote(job_path)}"
+    return _remote(
+        f"exec -T flink-jobmanager flink run {detach_flag}-py {shlex.quote(job_path)}"
     )
-    return _remote(cmd)
 
 
 def list_jobs() -> int:
-    return _remote("docker compose exec -T flink-jobmanager flink list")
+    return _remote("exec -T flink-jobmanager flink list")
 
 
 def cancel(job_id: str) -> int:
     return _remote(
-        f"docker compose exec -T flink-jobmanager flink cancel {shlex.quote(job_id)}"
+        f"exec -T flink-jobmanager flink cancel {shlex.quote(job_id)}"
     )
 
 
