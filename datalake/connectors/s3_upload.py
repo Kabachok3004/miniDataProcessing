@@ -46,10 +46,7 @@ def upload_bytes_to_s3(
     bucket: str,
     key: str,
 ) -> str:
-    """
-    Загружает bytes напрямую без создания временного файла.
-    Удобно для DataFrame → Parquet → S3 без записи на диск.
-    """
+
     client = get_s3_client()
     client.put_object(
         Bucket=bucket,

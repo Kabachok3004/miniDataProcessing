@@ -1,19 +1,4 @@
-"""
-PyFlink job: скользящие метрики из Kafka в S3.
 
-Читает JSON из топика `events` (формат: {event_type, user_id, amount, ts_ms}),
-строит sliding window 1 минута со сдвигом 10 секунд по event_type,
-считает count + sum(amount) + avg(amount), пишет JSON в S3.
-
-Колонка называется `amount`, а не `value` — VALUE зарезервированное слово в Flink SQL.
-
-Запуск внутри Flink JM-контейнера (см. flink_submit.py):
-    flink run -py /opt/jobs/rolling_metrics.py
-
-Параметры берутся из env переменных, проброшенных в контейнер через FLINK_PROPERTIES:
-  KAFKA_BOOTSTRAP_INTERNAL  - адрес Kafka внутри docker-сети (default: kafka:9092)
-  S3_BUCKET                 - бакет для sink (default: mini-data-lake)
-"""
 import os
 
 from pyflink.table import EnvironmentSettings, TableEnvironment

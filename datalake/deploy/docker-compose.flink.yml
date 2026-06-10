@@ -1,6 +1,8 @@
 # Стек для второго VPS: только Flink (JM + TM).
 # Kafka и Dagster живут на основном VPS (docker-compose.yml).
 # Flink ходит за Kafka по публичному адресу основного VPS — KAFKA_BOOTSTRAP из .env.
+name: mini-data-flink
+
 services:
   flink-jobmanager:
     build:
@@ -10,9 +12,8 @@ services:
     restart: unless-stopped
     command: jobmanager
     ports:
-      - "8081:8081"           # Web UI + REST
+      - "8081:8081" 
     environment:
-      # Для PyFlink-джоба (rolling_metrics.py читает из env)
       KAFKA_BOOTSTRAP_INTERNAL: "${KAFKA_BOOTSTRAP:?KAFKA_BOOTSTRAP not set in .env}"
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
@@ -24,7 +25,7 @@ services:
         s3.secret.key: ${datalake_secret_key}
         s3.path.style.access: true
     volumes:
-      - ../streaming/jobs:/opt/jobs:ro   # репо: datalake/streaming/jobs
+      - ../streaming/jobs:/opt/jobs:ro   
 
   flink-taskmanager:
     image: mini-flink:1.18

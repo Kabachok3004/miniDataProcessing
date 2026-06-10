@@ -6,7 +6,6 @@ cbr_job = define_asset_job(
     selection=["cbr_raw", "cbr_clean", "cbr_to_s3"],
 )
 
-# Каждый день в 9:00 — пока можно закомментировать
 cbr_schedule = ScheduleDefinition(
     job=cbr_job,
     cron_schedule="0 9 * * *",

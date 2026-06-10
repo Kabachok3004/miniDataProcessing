@@ -13,6 +13,7 @@
 """
 import json
 import os
+import sys
 from typing import Iterator
 
 from dotenv import load_dotenv
@@ -24,7 +25,17 @@ load_dotenv()
 
 
 def _bootstrap() -> str:
-    return os.getenv("KAFKA_BOOTSTRAP", "localhost:9094")
+    addr = os.getenv("KAFKA_BOOTSTRAP")
+    if not addr:
+        # Молчаливый дефолт localhost — частый источник NoBrokersAvailable,
+        # когда забыл export. Кричим сразу.
+        print(
+            "WARN: KAFKA_BOOTSTRAP не задан, использую localhost:9094. "
+            "Это, скорее всего, ошибка — выставь export KAFKA_BOOTSTRAP=<host>:9094",
+            file=sys.stderr,
+        )
+        addr = "localhost:9094"
+    return addr
 
 
 def get_producer() -> KafkaProducer:

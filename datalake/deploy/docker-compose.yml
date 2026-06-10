@@ -1,9 +1,11 @@
 # Стек для основного VPS: Dagster + Kafka.
 # Flink уехал на второй VPS (см. docker-compose.flink.yml).
+name: mini-data-core
+
 services:
   dagster:
     build:
-      context: ../..        # корень репо — отсюда виден datalake/
+      context: ../..  
       dockerfile: datalake/deploy/Dockerfile
     restart: unless-stopped
     ports:
@@ -21,7 +23,6 @@ services:
     ports:
       - "9094:9094"           # внешний listener — Flink с VPS2 и локальные клиенты ходят сюда
     environment:
-      # KRaft mode — без Zookeeper
       KAFKA_NODE_ID: "0"
       KAFKA_PROCESS_ROLES: "controller,broker"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
@@ -29,7 +30,6 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
-      # advertised: внутри docker-сети как kafka:9092, снаружи — по публичному адресу VPS
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://${KAFKA_EXTERNAL_HOST:-localhost}:9094"
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
@@ -41,5 +41,8 @@ services:
       - kafka_data:/tmp/kraft-combined-logs
 
 volumes:
+  # Абсолютные имена, чтобы переименование compose-проекта не теряло данные
   dagster_storage:
+    name: dagster_storage
   kafka_data:
+    name: kafka_data

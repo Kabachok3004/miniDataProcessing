@@ -11,6 +11,7 @@ dependencies = [
     "boto3",
     "python-dotenv",
     "kafka-python",
+    "streamlit",
 ]
 
 [build-system]

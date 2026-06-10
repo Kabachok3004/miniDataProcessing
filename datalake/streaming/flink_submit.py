@@ -1,22 +1,4 @@
-"""
-Сабмит PyFlink-джоба на удалённый Flink на VPS2.
 
-Стратегия: джобы лежат в репо в datalake/streaming/jobs/ и примонтированы
-в JM-контейнер как /opt/jobs (см. docker-compose.flink.yml). Чтобы запустить,
-делаем ssh + docker compose exec.
-
-Использование:
-    # FLINK_SSH = ssh-таргет второго VPS, где живёт Flink
-    export FLINK_SSH=datalake-vps-2     # или root@<vps2_ip>
-    python -m datalake.streaming.flink_submit rolling_metrics.py
-    python -m datalake.streaming.flink_submit rolling_metrics.py --detach
-
-Так же поддерживает list/cancel:
-    python -m datalake.streaming.flink_submit --list
-    python -m datalake.streaming.flink_submit --cancel <job_id>
-
-Для обратной совместимости поддерживается старая переменная VPS_SSH.
-"""
 import argparse
 import os
 import shlex
@@ -24,7 +6,6 @@ import subprocess
 import sys
 
 
-# Запускаемся из корня проекта (где лежит .env), чтобы docker compose
 # нормально его находил для подстановки переменных — как в deploy.yml.
 PROJECT_DIR = "/opt/mini_data_proc"
 COMPOSE_FILE = "datalake/deploy/docker-compose.flink.yml"
@@ -32,7 +13,6 @@ JOBS_DIR_IN_CONTAINER = "/opt/jobs"
 
 
 def _ssh_target() -> str:
-    # FLINK_SSH — основной, VPS_SSH — legacy fallback
     target = os.getenv("FLINK_SSH") or os.getenv("VPS_SSH")
     if not target:
         sys.exit(
