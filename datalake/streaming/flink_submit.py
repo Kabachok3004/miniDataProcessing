@@ -51,7 +51,9 @@ def cancel(job_id: str) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(
+        description=(__doc__ or "Сабмит PyFlink-джоба на VPS2 по SSH").split("\n\n")[0]
+    )
     parser.add_argument("job", nargs="?", help="имя файла из datalake/streaming/jobs/")
     parser.add_argument("--detach", action="store_true", help="вернуть control сразу")
     parser.add_argument("--list", action="store_true", help="показать активные джобы")
