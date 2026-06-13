@@ -10,7 +10,7 @@ import streamlit as st
 from datalake.connectors.s3_upload import get_s3_client
 
 BUCKET = "mini-data-lake"
-PREFIX = "data/mini-data-lake/streaming/rolling_metrics/"
+PREFIX = "streaming/rolling_metrics/"
 LOOKBACK_HOURS = 4         
 PAGE_SIZE = 100             
 
