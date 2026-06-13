@@ -2,6 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Персистентный home Dagster: совпадает с точкой монтирования volume
+# dagster_storage в docker-compose.yml. Без него dagster dev пишет в
+# временный /app/.tmp_dagster_home_* и теряет историю ранов при рестарте.
+ENV DAGSTER_HOME=/app/.dagster_home
+RUN mkdir -p /app/.dagster_home
+
 COPY datalake/deploy/pyproject.toml .
 RUN pip install -e .
 
