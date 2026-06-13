@@ -59,7 +59,7 @@ def load_metrics() -> pl.DataFrame:
                 except json.JSONDecodeError:
                     continue
 
-    if not records:
+    if not records: 
         return pl.DataFrame()
 
     return (
