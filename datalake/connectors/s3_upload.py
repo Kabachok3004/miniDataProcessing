@@ -55,3 +55,23 @@ def upload_bytes_to_s3(
     )
 
     return f"s3://{bucket}/{key}"
+
+
+def download_bytes(bucket: str, key: str) -> bytes:
+    """Скачивает объект целиком в память."""
+    client = get_s3_client()
+    return client.get_object(Bucket=bucket, Key=key)["Body"].read()
+
+
+def list_keys(bucket: str, prefix: str) -> list[str]:
+    """Все ключи под префиксом (с пагинацией), без «папок» и .inprogress-файлов."""
+    client = get_s3_client()
+    paginator = client.get_paginator("list_objects_v2")
+    keys: list[str] = []
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            if key.endswith("/") or ".inprogress" in key:
+                continue
+            keys.append(key)
+    return keys

@@ -1,18 +1,23 @@
-from dagster import Definitions, define_asset_job, ScheduleDefinition
-from assets.cbr import cbr_raw, cbr_clean, cbr_to_s3
+"""Сборка всех пайплайнов для Dagster.
 
-cbr_job = define_asset_job(
-    name="cbr_job",
-    selection=["cbr_raw", "cbr_clean", "cbr_to_s3"],
-)
+Чтобы подключить новый пайплайн:
+  1) добавь его assets-модуль в ASSET_MODULES;
+  2) добавь его job/schedule в JOBS / SCHEDULES.
+"""
 
-cbr_schedule = ScheduleDefinition(
-    job=cbr_job,
-    cron_schedule="0 9 * * *",
-)
+from dagster import Definitions, load_assets_from_modules
+
+from datalake.jobs.cbr import cbr_job, cbr_schedule
+from datalake.pipelines.cbr import assets as cbr_assets
+
+# ── реестр пайплайнов ────────────────────────────────
+ASSET_MODULES = [cbr_assets]
+JOBS = [cbr_job]
+SCHEDULES = [cbr_schedule]
+# ─────────────────────────────────────────────────────
 
 defs = Definitions(
-    assets=[cbr_raw, cbr_clean, cbr_to_s3],
-    jobs=[cbr_job],
-    schedules=[cbr_schedule],
+    assets=load_assets_from_modules(ASSET_MODULES),
+    jobs=JOBS,
+    schedules=SCHEDULES,
 )

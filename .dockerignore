@@ -1,0 +1,5 @@
+**/__pycache__/
+**/*.py[cod]
+**/.tmp_dagster_home*/
+**/.pytest_cache/
+.git/

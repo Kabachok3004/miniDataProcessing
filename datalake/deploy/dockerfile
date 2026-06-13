@@ -8,13 +8,16 @@ WORKDIR /app
 ENV DAGSTER_HOME=/app/.dagster_home
 RUN mkdir -p /app/.dagster_home
 
-COPY datalake/deploy/pyproject.toml .
-RUN pip install -e .
-
-COPY datalake/assets/ ./assets/
-COPY datalake/connectors/ ./connectors/
-COPY datalake/definitions.py .
+# Исходники + pyproject копируем вместе, затем editable-install:
+# ставит пакет `datalake` (import datalake.* работает) и все зависимости из pyproject.
+COPY datalake/deploy/pyproject.toml ./pyproject.toml
+COPY datalake/__init__.py datalake/paths.py datalake/definitions.py ./datalake/
+COPY datalake/connectors ./datalake/connectors
+COPY datalake/pipelines ./datalake/pipelines
+COPY datalake/jobs ./datalake/jobs
+RUN pip install --no-cache-dir -e .
 
 EXPOSE 3000
 
-CMD ["dagster", "dev", "-f", "definitions.py", "-h", "0.0.0.0", "-p", "3000"]
+# Запуск по модулю (раскладка пакета), а не по файлу.
+CMD ["dagster", "dev", "-m", "datalake.definitions", "-h", "0.0.0.0", "-p", "3000"]

@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "dagster",
     "dagster-webserver",
+    "duckdb",
     "polars",
     "httpx",
     "boto3",
@@ -17,3 +18,6 @@ dependencies = [
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["datalake*"]
