@@ -23,6 +23,8 @@ jobs:
             datalake_secret_key=${{ secrets.DATA_LAKE_SECRET_KEY }}
             KAFKA_EXTERNAL_HOST=${{ secrets.VPS_HOST }}
             KAFKA_BOOTSTRAP=${{ secrets.VPS_HOST }}:9094
+            HH_CLIENT_ID=${{ secrets.HH_CLIENT_ID }}
+            HH_CLIENT_SECRET=${{ secrets.HH_CLIENT_SECRET }}
             EOF
             chmod 600 /opt/mini_data_proc/.env
             echo ".env обновлён на VPS1"

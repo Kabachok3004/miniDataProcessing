@@ -108,13 +108,25 @@ def fetch_vacancies(
     professional_role: str | None = None,
     area: str | None = None,
     text: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     period: int = 30,
     per_page: int = 100,
     max_pages: int = 5,
 ) -> bytes:
-    """Вакансии по фильтру, склеенные по страницам -> JSON-массив items (bytes)."""
+    """Вакансии по фильтру, склеенные по страницам -> JSON-массив items (bytes).
+
+    date_from/date_to (ISO-дата публикации) задают инкрементальное окно; их
+    нельзя слать вместе с period, поэтому при заданном date_from period опускаем.
+    """
     headers = {**HEADERS, "Authorization": f"Bearer {token}"}
-    params: dict = {"per_page": per_page, "period": period}
+    params: dict = {"per_page": per_page}
+    if date_from is not None:
+        params["date_from"] = date_from
+        if date_to is not None:
+            params["date_to"] = date_to
+    else:
+        params["period"] = period
     if professional_role is not None:
         params["professional_role"] = professional_role
     if area is not None:
