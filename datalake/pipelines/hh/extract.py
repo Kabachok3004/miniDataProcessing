@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import time
+from pathlib import Path
 
 import httpx
 
@@ -57,22 +59,70 @@ DICTIONARIES = {
 
 # ── Вакансии (нужен app-токен: dev.hh.ru -> приложение -> client_credentials) ─
 
-def get_app_token() -> str:
-    """Application access token (client_credentials). Креды — из .env."""
+# App-токен длинноживущий — кешируем в файл (общий для всех воркер-процессов
+# контейнера), чтобы 194 таски не минтили по токену каждая (HH банит burst на /token).
+_TOKEN_CACHE = Path(os.getenv("HH_TOKEN_CACHE", "/tmp/hh_app_token.json"))
+
+
+def _read_cached_token() -> str | None:
+    try:
+        c = json.loads(_TOKEN_CACHE.read_text())
+        if c.get("expires_at", 0) - time.time() > 300:  # ещё валиден (запас 5 мин)
+            return c["access_token"]
+    except Exception:
+        return None
+    return None
+
+
+def get_app_token(retries: int = 6, backoff: float = 1.5) -> str:
+    """Application access token (client_credentials), с кешем и backoff.
+
+    Возвращает закешированный токен, если он ещё валиден. Иначе запрашивает новый,
+    переживая 403/429 на /token (burst-троттлинг) и гонку между воркерами.
+    """
+    cached = _read_cached_token()
+    if cached:
+        return cached
+
     cid, sec = os.getenv("HH_CLIENT_ID"), os.getenv("HH_CLIENT_SECRET")
     if not cid or not sec:
         raise RuntimeError(
             "HH_CLIENT_ID / HH_CLIENT_SECRET не заданы в .env "
             "(зарегистрируй приложение на https://dev.hh.ru)"
         )
-    r = httpx.post(
-        f"{HH}/token",
-        data={"grant_type": "client_credentials", "client_id": cid, "client_secret": sec},
-        headers=HEADERS,
-        timeout=20,
-    )
-    r.raise_for_status()
-    return r.json()["access_token"]
+
+    last: httpx.Response | None = None
+    for attempt in range(retries):
+        cached = _read_cached_token()  # другой воркер мог уже получить токен
+        if cached:
+            return cached
+        r = httpx.post(
+            f"{HH}/token",
+            data={"grant_type": "client_credentials", "client_id": cid, "client_secret": sec},
+            headers=HEADERS,
+            timeout=20,
+        )
+        if r.status_code == 200:
+            data = r.json()
+            token = data["access_token"]
+            expires_at = time.time() + int(data.get("expires_in", 14 * 24 * 3600))
+            try:  # атомарная запись кеша
+                tmp = _TOKEN_CACHE.with_suffix(".tmp")
+                tmp.write_text(json.dumps({"access_token": token, "expires_at": expires_at}))
+                tmp.replace(_TOKEN_CACHE)
+            except Exception:
+                pass
+            return token
+        if r.status_code in (403, 429, 503):  # burst-троттлинг — ждём и пробуем снова
+            ra = r.headers.get("Retry-After")
+            wait = float(ra) if (ra and ra.isdigit()) else backoff * (2 ** attempt)
+            time.sleep(min(wait, 60) + random.uniform(0, 1))  # jitter против гонки
+            last = r
+            continue
+        r.raise_for_status()
+    if last is not None:
+        last.raise_for_status()
+    raise RuntimeError("get_app_token: ретраи исчерпаны")
 
 
 def _get_with_backoff(
